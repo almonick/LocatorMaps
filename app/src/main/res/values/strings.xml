@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">LocatorMaps</string>
+    <string name="search">Find Image near you</string>
+    <string name="title_activity_maps">Map</string>
+</resources>
