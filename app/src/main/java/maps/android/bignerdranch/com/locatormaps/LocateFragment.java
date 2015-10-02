@@ -6,19 +6,21 @@ import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
-import android.support.v4.app.Fragment;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.ImageView;
 
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.CameraUpdate;
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 
 import java.io.IOException;
 import java.util.List;
@@ -27,10 +29,15 @@ import java.util.Random;
 /**
  * Created by Bender on 29/09/2015.
  */
-public class LocateFragment extends Fragment {
+public class LocateFragment extends SupportMapFragment {
 
-	private ImageView mImageView;
+	//private ImageView mImageView;
 	private GoogleApiClient mClient;
+	private GoogleMap mMap;
+	private Bitmap mMapImage;
+	private GalleryItem mMapItem;
+	private Location mCurrentLocation;
+
 
 	@Override
 	public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -49,6 +56,13 @@ public class LocateFragment extends Fragment {
 					}
 				})
 				.build();
+		getMapAsync(new OnMapReadyCallback() {
+			@Override
+			public void onMapReady(GoogleMap googleMap) {
+				mMap = googleMap;
+				updateUI();
+			}
+		});
 	}
 
 	@Override
@@ -88,15 +102,6 @@ public class LocateFragment extends Fragment {
 		return fragment;
 	}
 
-	@Nullable
-	@Override
-	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-		View view = inflater.inflate(R.layout.fragment_locator, container, false);
-		mImageView = (ImageView) view.findViewById(R.id.imageView);
-
-		return view;
-	}
-
 	private void findImage(){
 		LocationRequest request = LocationRequest.create();
 		request.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
@@ -111,14 +116,30 @@ public class LocateFragment extends Fragment {
 
 	}
 
+	private void updateUI(){
+		if(mMap == null || mMapImage == null) return;
+		LatLng itemPoint = new LatLng(mMapItem.getLat(), mMapItem.getLon());
+		LatLng myPoint = new LatLng(mCurrentLocation.getLatitude(), mCurrentLocation.getLongitude());
+
+		LatLngBounds bounds = new LatLngBounds.Builder().include(itemPoint).include(myPoint).build();
+		int margin = getResources().getDimensionPixelSize(R.dimen.map_inset_margin);
+		CameraUpdate update = CameraUpdateFactory.newLatLngBounds(bounds, margin);
+		mMap.animateCamera(update);
+
+
+
+	}
+
 	private class SearchTask extends AsyncTask<Location, Void, Void>{
 		private GalleryItem mItem;
 		private Bitmap mBitmap;
+		private Location mLocation;
 
 		@Override
 		protected Void doInBackground(Location... params) {
 			FlickerFetcher fetcher = new FlickerFetcher();
-			List<GalleryItem> galleryItems = fetcher.searchPhotos(params[0]);
+			mLocation = params[0];
+			List<GalleryItem> galleryItems = fetcher.searchPhotos(mLocation);
 			if(galleryItems.size() == 0) {
 				return null;
 			}
@@ -135,7 +156,11 @@ public class LocateFragment extends Fragment {
 
 		@Override
 		protected void onPostExecute(Void aVoid) {
-			mImageView.setImageBitmap(mBitmap);
+			mMapImage = mBitmap;
+			mMapItem = mItem;
+			mCurrentLocation = mLocation;
+			updateUI();
+			//mImageView.setImageBitmap(mBitmap);
 		}
 	}
 }

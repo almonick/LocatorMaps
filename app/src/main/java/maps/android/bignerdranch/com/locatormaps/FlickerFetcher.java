@@ -36,7 +36,7 @@ public class FlickerFetcher {
 			.appendQueryParameter("api_key", API_KEY)
 			.appendQueryParameter("format", "json")
 			.appendQueryParameter("nojsoncallback", "1")
-			.appendQueryParameter("extras", "url_s")
+			.appendQueryParameter("extras", "url_s,geo")
 			.build();
 
 	public byte[] getUrlBytes(String urlSpec) throws IOException {
@@ -133,8 +133,9 @@ public class FlickerFetcher {
 			if (!photoJsonObject.has("url_s")) {
 				continue;
 			}
-
 			item.setUrl(photoJsonObject.getString("url_s"));
+			item.setLat(photoJsonObject.getDouble("latitude"));
+			item.setLon(photoJsonObject.getDouble("longitude"));
 			items.add(item);
 		}
 	}
